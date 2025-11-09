@@ -135,19 +135,23 @@ runBtn.onclick = async () => {
   code = preprocessArduinoCode(code);
 
   try {
-    await (async () => {
-      // Pass in your helpers
-      const userFunc = new Function("newStrip","delay",
-        `"use strict";
+    // Wrap user code in async function inside the string
+    const userFunc = new Function("newStrip","delay",
+      `"use strict";
+       return (async () => {
          ${code}
          if(typeof setup==='function') await setup();
-         if(typeof loop==='function') while(true) await loop();`
-      );
-      await userFunc(newStrip, delay);
-    })();
+         if(typeof loop==='function') while(true) await loop();
+       })();`
+    );
+
+    // Await the call to the async function
+    await userFunc(newStrip, delay);
+
   } catch(err) {
     console.error("Simulation error:", err);
   }
 };
+
 
 
