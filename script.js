@@ -3,9 +3,9 @@ const runBtn = document.getElementById("runBtn");
 
 let allStrips = [];
 
-// -------------------------
-//  NeoPixel Simulation
-// -------------------------
+/* -----------------------------------------
+   NeoPixel Simulation
+------------------------------------------ */
 class WebNeoPixel {
   constructor(numPixels, pin, type = "GRB") {
     this.num = numPixels;
@@ -19,7 +19,6 @@ class WebNeoPixel {
   attachToDOM(labelText = "") {
     const row = document.createElement("div");
     row.classList.add("stripRow");
-
     const label = document.createElement("div");
     label.classList.add("stripLabel");
     label.textContent = labelText;
@@ -31,6 +30,7 @@ class WebNeoPixel {
       row.appendChild(led);
       this.leds.push(led);
     }
+
     stripContainer.appendChild(row);
   }
 
@@ -56,14 +56,16 @@ class WebNeoPixel {
   clear() { this.fill(0); }
 
   setPixelColor(i, r, g, b, w = 0) {
-    if (g === undefined) {  
+    if (g === undefined) {
       this.buffer[i] = this.unpackColor(r);
       return;
     }
     this.buffer[i] = { r:r||0, g:g||0, b:b||0, w:w||0 };
   }
 
-  Color(r, g, b, w = 0) { return (w<<24)|(r<<16)|(g<<8)|b; }
+  Color(r, g, b, w = 0) {
+    return (w << 24) | (r << 16) | (g << 8) | b;
+  }
 
   unpackColor(c) {
     return {
@@ -75,12 +77,13 @@ class WebNeoPixel {
   }
 }
 
-// -------------------------
-//   Button Simulation
-// -------------------------
+/* -----------------------------------------
+   Button Simulation
+------------------------------------------ */
 class WebButton {
   constructor(label) {
     this.callback = null;
+
     this.elem = document.createElement("button");
     this.elem.textContent = label;
     this.elem.classList.add("simButton");
@@ -92,12 +95,14 @@ class WebButton {
     stripContainer.appendChild(this.elem);
   }
 
-  onClick(cb) { this.callback = cb; }
+  onClick(cb) {
+    this.callback = cb;
+  }
 }
 
-// -------------------------
-//  API Exposed to Arduino Code
-// -------------------------
+/* -----------------------------------------
+   Exposed API
+------------------------------------------ */
 function newStrip(numPixels, pin, type="GRB") {
   const strip = new WebNeoPixel(numPixels, pin, type);
   allStrips.push(strip);
@@ -109,25 +114,26 @@ function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-// -------------------------
-//  Preprocess Arduino-style Code
-// -------------------------
+/* -----------------------------------------
+   Arduino → JavaScript Preprocessor
+------------------------------------------ */
 function preprocessArduinoCode(code) {
+
   // Remove #include lines
   code = code.replace(/^\s*#.*$/gm, "");
 
   // Replace NeoPixel type constants NEO_GRB → "GRB"
   code = code.replace(/\bNEO_([A-Z]+)\b/g, (m, t) => `"${t}"`);
 
-  // Constructor: Adafruit_NeoPixel strip(10,6,"GRB");
+  // Form 1: Adafruit_NeoPixel strip(10,6,"GRB");
   code = code.replace(
-    /Adafruit_NeoPixel\s+(\w+)\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*"([A-Z]+)"\s*\)\s*;/gi,
+    /Adafruit_NeoPixel\s+(\w+)\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*"([A-Za-z]+)"\s*\)\s*;/g,
     (m, name, count, pin, type) => `let ${name} = newStrip(${count}, ${pin}, "${type}");`
   );
 
-  // Constructor: Adafruit_NeoPixel strip = Adafruit_NeoPixel(...);
+  // Form 2: Adafruit_NeoPixel strip = Adafruit_NeoPixel(...);
   code = code.replace(
-    /Adafruit_NeoPixel\s+(\w+)\s*=\s*Adafruit_NeoPixel\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*"([A-Z]+)"\s*\)\s*;/gi,
+    /Adafruit_NeoPixel\s+(\w+)\s*=\s*Adafruit_NeoPixel\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*"([A-Za-z]+)"\s*\)\s*;/g,
     (m, name, count, pin, type) => `let ${name} = newStrip(${count}, ${pin}, "${type}");`
   );
 
@@ -137,35 +143,42 @@ function preprocessArduinoCode(code) {
     `let $1 = new WebButton("$2");`
   );
 
-  // Smart delay() → await delay()
+  // Smart delay: Only replace when not already awaited
   code = code.replace(/(?<!await\s)\bdelay\s*\(/g, "await delay(");
 
-  // Convert ALL setup() forms
-  code = code.replace(/async\s+function\s+setup\s*\(/g, "setup = async (");
-  code = code.replace(/void\s+setup\s*\(\s*\)/g, "setup = async ()");
+  // ✅ Convert ALL forms of setup() to arrow-based assignments
+  code = code.replace(/async\s+function\s+setup\s*\(\s*\)\s*\{/g,
+                      "setup = async () => {");
 
-  // Convert ALL loop() forms
-  code = code.replace(/async\s+function\s+loop\s*\(/g, "loop = async (");
-  code = code.replace(/void\s+loop\s*\(\s*\)/g, "loop = async ()");
+  code = code.replace(/void\s+setup\s*\(\s*\)\s*\{/g,
+                      "setup = async () => {");
+
+  // ✅ Convert ALL forms of loop() to arrow-based assignments
+  code = code.replace(/async\s+function\s+loop\s*\(\s*\)\s*\{/g,
+                      "loop = async () => {");
+
+  code = code.replace(/void\s+loop\s*\(\s*\)\s*\{/g,
+                      "loop = async () => {");
 
   return code;
 }
 
-// -------------------------
-//      EXECUTION WRAPPER
-// -------------------------
+/* -----------------------------------------
+   Main Execution Handler
+------------------------------------------ */
 runBtn.onclick = async () => {
+
   stripContainer.innerHTML = "";
   allStrips = [];
 
   let code = document.getElementById("codeInput").value;
   code = preprocessArduinoCode(code);
 
-  // Debug output
+  // DEBUG: Show processed code
   console.log("----- PROCESSED CODE -----\n" + code);
 
   try {
-    // Wrap entire user program in one async function
+    // Wrap everything inside a single async function
     const wrapped = `
       let setup = async ()=>{};
       let loop  = async ()=>{};
@@ -173,9 +186,10 @@ runBtn.onclick = async () => {
       ${code}
 
       await setup();
-      while(true) await loop();
+      while (true) await loop();
     `;
 
+    // Execute the wrapped program
     await (async () => { eval(wrapped); })();
 
   } catch (err) {
