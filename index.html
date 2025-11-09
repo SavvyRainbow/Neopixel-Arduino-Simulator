@@ -13,20 +13,48 @@
   <textarea id="codeInput">
 // Example: Two strips
 
-Adafruit_NeoPixel strip1 = newStrip(30, 6, "GRB");
-Adafruit_NeoPixel strip2 = newStrip(20, 7, "RGBW");
+#include <Adafruit_NeoPixel.h>
 
-strip1.begin();
-strip2.begin();
+// Create two strips
+Adafruit_NeoPixel strip1(10, 6, NEO_GRB);
+Adafruit_NeoPixel strip2(15, 7, NEO_RGB);
 
-for (int i = 0; i < strip1.numPixels(); i++) {
-  strip1.setPixelColor(i, strip1.ColorHSV((i * 2000) % 65535));
-  strip1.show();
-  delay(30);
+void setup() {
+  strip1.begin();
+  strip2.begin();
 }
 
-strip2.fill(strip2.Color(0,0,100));
-strip2.show();
+void loop() {
+  // Strip 1: Red moving pixel
+  for(int i=0; i<strip1.numPixels(); i++){
+    strip1.clear();
+    strip1.setPixelColor(i, strip1.Color(255,0,0));
+    strip1.show();
+    delay(100);
+  }
+
+  // Strip 2: Rainbow wipe
+  for(int i=0; i<strip2.numPixels(); i++){
+    int color = strip2.Wheel((i*16) % 256);
+    strip2.setPixelColor(i, color);
+    strip2.show();
+    delay(50);
+  }
+
+  // Both strips: blink white
+  strip1.fill(strip1.Color(255,255,255));
+  strip2.fill(strip2.Color(255,255,255));
+  strip1.show();
+  strip2.show();
+  delay(500);
+
+  strip1.clear();
+  strip2.clear();
+  strip1.show();
+  strip2.show();
+  delay(500);
+}
+
   </textarea>
 
   <button id="runBtn">Run Simulation</button>
