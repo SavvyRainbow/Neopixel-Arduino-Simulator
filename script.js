@@ -176,12 +176,53 @@ runBtn.onclick = async () => {
   stripContainer.innerHTML = "";
   allStrips = [];
 
-  const code = document.getElementById("codeInput").value;
+  let code = document.getElementById("codeInput").value;
 
+  // PREPROCESS ARDUINO INTO JAVASCRIPT
+  code = preprocessArduinoCode(code);
+
+  // Prepare sandbox: inject newStrip, delay
   const sandbox = new Function(
     "newStrip", "delay",
-    `"use strict"; return (async () => { ${code} })()`
+    `"use strict"; 
+     ${code}
+     if (typeof setup === 'function') await setup();
+     if (typeof loop === 'function') while(true) await loop();
+    `
   );
 
   sandbox(newStrip, delay);
 };
+
+function preprocessArduinoCode(code) {
+  // Remove includes
+  code = code.replace(/#include\s+<[^>]+>/g, "");
+
+  // Replace NEO_* constants with string types
+  code = code.replace(/\bNEO_GRB\b/g, `"GRB"`);
+  code = code.replace(/\bNEO_RGB\b/g, `"RGB"`);
+  code = code.replace(/\bNEO_BRG\b/g, `"BRG"`);
+  code = code.replace(/\bNEO_GBR\b/g, `"GBR"`);
+  code = code.replace(/\bNEO_BGR\b/g, `"BGR"`);
+  code = code.replace(/\bNEO_RGBW\b/g, `"RGBW"`);
+
+  // Convert Adafruit constructor → newStrip()
+  code = code.replace(
+    /Adafruit_NeoPixel\s+(\w+)\s*=\s*Adafruit_NeoPixel\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*([^\)]+)\);\s*/g,
+    `let $1 = newStrip($2, $3, $4);`
+  );
+
+  code = code.replace(
+    /Adafruit_NeoPixel\s+(\w+)\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*([^\)]+)\);\s*/g,
+    `let $1 = newStrip($2, $3, $4);`
+  );
+
+  // Convert delay() → await delay()
+  code = code.replace(/\bdelay\s*\(/g, "await delay(");
+
+  // Convert void setup()/loop()
+  code = code.replace(/void\s+setup\s*\(\s*\)/, "async function setup()");
+  code = code.replace(/void\s+loop\s*\(\s*\)/, "async function loop()");
+
+  return code;
+}
