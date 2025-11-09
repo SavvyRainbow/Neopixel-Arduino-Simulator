@@ -195,34 +195,37 @@ runBtn.onclick = async () => {
 };
 
 function preprocessArduinoCode(code) {
-  // Remove includes
-  code = code.replace(/#include\s+<[^>]+>/g, "");
 
-  // Replace NEO_* constants with string types
+  // Remove ALL Arduino preprocessor lines (#include, #define, #if, #pragma, etc.)
+  code = code.replace(/^\s*#.*$/gm, "");
+
+  // Replace NEO_* constants with JS strings
   code = code.replace(/\bNEO_GRB\b/g, `"GRB"`);
   code = code.replace(/\bNEO_RGB\b/g, `"RGB"`);
+  code = code.replace(/\bNEO_RGBW\b/g, `"RGBW"`);
   code = code.replace(/\bNEO_BRG\b/g, `"BRG"`);
   code = code.replace(/\bNEO_GBR\b/g, `"GBR"`);
   code = code.replace(/\bNEO_BGR\b/g, `"BGR"`);
-  code = code.replace(/\bNEO_RGBW\b/g, `"RGBW"`);
 
-  // Convert Adafruit constructor → newStrip()
+  // Replace constructors: Adafruit_NeoPixel strip = Adafruit_NeoPixel(...)
   code = code.replace(
-    /Adafruit_NeoPixel\s+(\w+)\s*=\s*Adafruit_NeoPixel\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*([^\)]+)\);\s*/g,
+    /Adafruit_NeoPixel\s+(\w+)\s*=\s*Adafruit_NeoPixel\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*([^)]+)\);/g,
     `let $1 = newStrip($2, $3, $4);`
   );
 
+  // Replace C++-style: Adafruit_NeoPixel strip(30, 6, NEO_GRB);
   code = code.replace(
-    /Adafruit_NeoPixel\s+(\w+)\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*([^\)]+)\);\s*/g,
+    /Adafruit_NeoPixel\s+(\w+)\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*([^)]+)\);/g,
     `let $1 = newStrip($2, $3, $4);`
   );
 
   // Convert delay() → await delay()
   code = code.replace(/\bdelay\s*\(/g, "await delay(");
 
-  // Convert void setup()/loop()
+  // Convert C++ void setup()/loop()
   code = code.replace(/void\s+setup\s*\(\s*\)/, "async function setup()");
   code = code.replace(/void\s+loop\s*\(\s*\)/, "async function loop()");
 
   return code;
 }
+
