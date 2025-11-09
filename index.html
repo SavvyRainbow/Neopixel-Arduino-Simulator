@@ -2,33 +2,36 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>NeoPixel Web Simulator (Full API)</title>
+  <title>NeoPixel Simulator — Multiple Strips</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <h1>NeoPixel Web Simulator — Full API</h1>
+  <h1>NeoPixel Simulator — Multiple Strips</h1>
+
+  <p>You can define any number of strips just like Arduino:</p>
 
   <textarea id="codeInput">
-// Example full-API NeoPixel code
+// Example: Two strips
 
-strip.begin();
-strip.setBrightness(50);
+Adafruit_NeoPixel strip1 = newStrip(30, 6, "GRB");
+Adafruit_NeoPixel strip2 = newStrip(20, 7, "RGBW");
 
-for (int i = 0; i < strip.numPixels(); i++) {
-  strip.setPixelColor(i, strip.ColorHSV((i * 1000) % 65535));
-  strip.show();
-  delay(20);
+strip1.begin();
+strip2.begin();
+
+for (int i = 0; i < strip1.numPixels(); i++) {
+  strip1.setPixelColor(i, strip1.ColorHSV((i * 2000) % 65535));
+  strip1.show();
+  delay(30);
 }
 
-delay(500);
-
-strip.fill(strip.Color(0,0,0));
-strip.show();
+strip2.fill(strip2.Color(0,0,100));
+strip2.show();
   </textarea>
 
   <button id="runBtn">Run Simulation</button>
 
-  <div id="ledStrip"></div>
+  <div id="stripContainer"></div>
 
   <script src="script.js"></script>
 </body>
