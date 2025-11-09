@@ -3,76 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>NeoPixel Simulator</title>
-<style>
-body {
-  margin: 0;
-  padding: 20px;
-  font-family: monospace;
-  background-color: #000 !important;
-  color: #fff !important;
-}
-
-h2 { color: #fff !important; }
-
-#codeInput {
-  width: 100%;
-  height: 250px;
-  font-family: monospace;
-  background-color: #000 !important;
-  background: #000 !important;
-  color: #fff !important;
-  caret-color: #fff !important;
-  border: 1px solid #333 !important;
-  border-radius: 5px !important;
-  padding: 10px !important;
-  resize: vertical !important;
-  box-sizing: border-box !important;
-  outline: none !important;
-  -webkit-appearance: none !important;
-  appearance: none !important;
-}
-
-#codeInput::-webkit-scrollbar { width: 8px; }
-#codeInput::-webkit-scrollbar-track { background: #111; }
-#codeInput::-webkit-scrollbar-thumb { background: #555; border-radius: 4px; }
-
-#runBtn {
-  margin-top: 10px;
-  padding: 10px 20px;
-  background: transparent;
-  color: #fff;
-  border: 2px solid #0f0;
-  border-radius: 5px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-#runBtn:hover {
-  background-color: #0f0;
-  color: #000;
-}
-
-#stripContainer { margin-top: 20px; }
-.stripRow {
-  margin-bottom: 10px;
-  display: flex;
-  align-items: center;
-}
-.stripLabel {
-  margin-right: 10px;
-  width: 60px;
-  color: #fff !important;
-}
-.led {
-  width: 20px;
-  height: 20px;
-  background: #111 !important;
-  margin: 1px;
-  border-radius: 3px;
-  border: 1px solid #333;
-}
-</style>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 
@@ -120,8 +51,10 @@ void loop() {
 </textarea>
 
 <button id="runBtn">Run Simulation</button>
+
 <div id="stripContainer"></div>
 
 <script src="script.js"></script>
+
 </body>
 </html>
