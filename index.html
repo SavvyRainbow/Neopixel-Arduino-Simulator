@@ -2,19 +2,28 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>NeoPixel Web Simulator</title>
+  <title>NeoPixel Web Simulator (Full API)</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <h1>NeoPixel Web Simulator</h1>
+  <h1>NeoPixel Web Simulator — Full API</h1>
 
   <textarea id="codeInput">
-// Example Arduino NeoPixel code
-for (int i = 0; i < 30; i++) {
-  setPixelColor(i, 255, 0, 0);
-  show();
-  delay(50);
+// Example full-API NeoPixel code
+
+strip.begin();
+strip.setBrightness(50);
+
+for (int i = 0; i < strip.numPixels(); i++) {
+  strip.setPixelColor(i, strip.ColorHSV((i * 1000) % 65535));
+  strip.show();
+  delay(20);
 }
+
+delay(500);
+
+strip.fill(strip.Color(0,0,0));
+strip.show();
   </textarea>
 
   <button id="runBtn">Run Simulation</button>
