@@ -190,7 +190,7 @@ runBtn.onclick = async () => {
   code = preprocessArduinoCode(code);
 
   try {
-    // Match all top-level declarations (NeoPixels & Buttons)
+    // Extract top-level declarations (NeoPixel + Buttons)
     const declRegex = /(let\s+\w+\s*=\s*(newStrip|new WebButton)\([^\)]*\);)/g;
     let topDeclarations = "";
     let restOfCode = code.replace(declRegex, (match) => {
@@ -198,10 +198,10 @@ runBtn.onclick = async () => {
       return "";
     });
 
-    // Step 1: Evaluate declarations immediately
+    // Step 1: Evaluate declarations first
     eval(topDeclarations);
 
-    // Step 2: Evaluate the rest of the code (setup/loop)
+    // Step 2: Evaluate the rest of the code (functions)
     await (async function(newStrip, delay, WebButton){
       eval(restOfCode);
       if(typeof setup === "function") await setup();
@@ -212,5 +212,3 @@ runBtn.onclick = async () => {
     console.error("Simulation error:", err);
   }
 };
-
-
