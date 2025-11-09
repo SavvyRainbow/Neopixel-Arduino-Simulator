@@ -135,11 +135,17 @@ function preprocessArduinoCode(code){
   code = code.replace(/\bNEO_GBR\b/g, `"GBR"`);
   code = code.replace(/\bNEO_BGR\b/g, `"BGR"`);
 
-  // Convert constructors
+  // Convert Adafruit_NeoPixel constructors
   code = code.replace(/Adafruit_NeoPixel\s+(\w+)\s*=\s*Adafruit_NeoPixel\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*([^)]+)\);/g,
     `let $1 = newStrip($2,$3,$4);`);
   code = code.replace(/Adafruit_NeoPixel\s+(\w+)\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*([^)]+)\);/g,
     `let $1 = newStrip($2,$3,$4);`);
+
+  // Convert Arduino types to JS
+  code = code.replace(/\bint\s+([a-zA-Z_]\w*)/g, "let $1");
+  code = code.replace(/\blong\s+([a-zA-Z_]\w*)/g, "let $1");
+  code = code.replace(/\bbyte\s+([a-zA-Z_]\w*)/g, "let $1");
+  code = code.replace(/\bchar\s+([a-zA-Z_]\w*)/g, "let $1");
 
   // Convert delay() → await delay()
   code = code.replace(/\bdelay\s*\(/g,"await delay(");
@@ -150,6 +156,7 @@ function preprocessArduinoCode(code){
 
   return code;
 }
+
 
 // ================= RUN BUTTON =================
 runBtn.onclick = async () => {
