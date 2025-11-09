@@ -111,6 +111,8 @@ runBtn.onclick = async () => {
 
   let code=document.getElementById("codeInput").value;
   code=preprocessArduinoCode(code);
+  console.log("----- PROCESSED CODE -----\n" + code);
+
 
   try {
     // ✅ Wrap EVERYTHING inside one async function
