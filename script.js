@@ -190,9 +190,22 @@ runBtn.onclick = async () => {
   code = preprocessArduinoCode(code);
 
   try {
-    // Execute user code in async IIFE
+    // Split code into top-level declarations and function definitions
+    const declarationMatch = code.match(/^(let\s+\w+\s*=\s*.+?;\s*)+/s);
+    let declarations = "";
+    let functionsAndRest = code;
+
+    if(declarationMatch){
+      declarations = declarationMatch[0];
+      functionsAndRest = code.slice(declarations.length);
+    }
+
+    // Step 1: run all top-level declarations
+    eval(declarations);
+
+    // Step 2: run functions/loop code
     await (async function(newStrip, delay, WebButton){
-      eval(code); // user code runs here
+      eval(functionsAndRest);
       if(typeof setup==='function') await setup();
       if(typeof loop==='function') while(true) await loop();
     })(newStrip, delay, WebButton);
