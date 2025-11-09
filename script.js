@@ -190,27 +190,24 @@ runBtn.onclick = async () => {
   code = preprocessArduinoCode(code);
 
   try {
-    // Split code into top-level declarations and function definitions
-    const declarationMatch = code.match(/^(let\s+\w+\s*=\s*.+?;\s*)+/s);
-    let declarations = "";
-    let functionsAndRest = code;
+    // Split top-level declarations vs rest of code
+    const topLevelRegex = /^(let\s+\w+\s*=\s*.+?;\s*)+/s;
+    const topMatch = code.match(topLevelRegex);
+    let topCode = topMatch ? topMatch[0] : "";
+    let restCode = topMatch ? code.slice(topCode.length) : code;
 
-    if(declarationMatch){
-      declarations = declarationMatch[0];
-      functionsAndRest = code.slice(declarations.length);
-    }
+    // Step 1: evaluate top-level declarations
+    eval(topCode);
 
-    // Step 1: run all top-level declarations
-    eval(declarations);
-
-    // Step 2: run functions/loop code
+    // Step 2: evaluate functions / loops
     await (async function(newStrip, delay, WebButton){
-      eval(functionsAndRest);
-      if(typeof setup==='function') await setup();
-      if(typeof loop==='function') while(true) await loop();
+      eval(restCode);
+      if(typeof setup === "function") await setup();
+      if(typeof loop === "function") while(true) await loop();
     })(newStrip, delay, WebButton);
 
   } catch(err) {
     console.error("Simulation error:", err);
   }
 };
+
