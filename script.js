@@ -178,7 +178,7 @@ runBtn.onclick = async () => {
 
   let code = document.getElementById("codeInput").value;
 
-  // PREPROCESS ARDUINO INTO JAVASCRIPT
+  // ✅ Apply Arduino preprocessing BEFORE execution
   code = preprocessArduinoCode(code);
 
   // Prepare sandbox: inject newStrip, delay
