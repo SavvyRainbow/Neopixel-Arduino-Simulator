@@ -1,21 +1,87 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>NeoPixel Simulator — Multiple Strips</title>
-  <link rel="stylesheet" href="styles.css" />
+<meta charset="UTF-8">
+<title>NeoPixel Simulator</title>
+<style>
+  /* Dark theme body */
+  body {
+    font-family: monospace;
+    background-color: #000;
+    color: #fff;
+    padding: 20px;
+  }
+
+  h2 {
+    color: #fff;
+  }
+
+  /* Textarea for Arduino code */
+  textarea {
+    width: 100%;
+    height: 250px;
+    font-family: monospace;
+    background-color: #111 !important;
+    color: #fff !important;
+    padding: 10px;
+    border: 1px solid #333;
+    border-radius: 5px;
+    resize: vertical;
+    box-sizing: border-box;
+  }
+
+  textarea::-webkit-scrollbar { width: 8px; }
+  textarea::-webkit-scrollbar-track { background: #222; }
+  textarea::-webkit-scrollbar-thumb { background: #555; border-radius: 4px; }
+
+  /* Run button */
+  button {
+    margin-top: 10px;
+    padding: 10px 20px;
+    background: transparent;
+    color: #fff;
+    border: 2px solid #0f0; /* green outline */
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.2s;
+  }
+
+  button:hover {
+    background-color: #0f0; /* green hover */
+    color: #000;
+  }
+
+  /* Strip container and LEDs */
+  #stripContainer { margin-top: 20px; }
+  .stripRow {
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+  }
+  .stripLabel {
+    margin-right: 10px;
+    width: 60px;
+    color: #fff;
+  }
+  .led {
+    width: 20px;
+    height: 20px;
+    background: #111;
+    margin: 1px;
+    border-radius: 3px;
+    border: 1px solid #333;
+  }
+
+</style>
 </head>
 <body>
-  <h1>NeoPixel Simulator — Multiple Strips</h1>
 
-  <p>You can define any number of strips just like Arduino:</p>
+<h2>NeoPixel Simulator</h2>
 
-  <textarea id="codeInput">
-// Example: Two strips
-
+<textarea id="codeInput">
 #include <Adafruit_NeoPixel.h>
 
-// Create two strips
 Adafruit_NeoPixel strip1(10, 6, NEO_GRB);
 Adafruit_NeoPixel strip2(15, 7, NEO_RGB);
 
@@ -25,7 +91,6 @@ void setup() {
 }
 
 void loop() {
-  // Strip 1: Red moving pixel
   for(int i=0; i<strip1.numPixels(); i++){
     strip1.clear();
     strip1.setPixelColor(i, strip1.Color(255,0,0));
@@ -33,7 +98,6 @@ void loop() {
     delay(100);
   }
 
-  // Strip 2: Rainbow wipe
   for(int i=0; i<strip2.numPixels(); i++){
     int color = strip2.Wheel((i*16) % 256);
     strip2.setPixelColor(i, color);
@@ -41,7 +105,6 @@ void loop() {
     delay(50);
   }
 
-  // Both strips: blink white
   strip1.fill(strip1.Color(255,255,255));
   strip2.fill(strip2.Color(255,255,255));
   strip1.show();
@@ -54,13 +117,13 @@ void loop() {
   strip2.show();
   delay(500);
 }
+</textarea>
 
-  </textarea>
+<button id="runBtn">Run Simulation</button>
 
-  <button id="runBtn">Run Simulation</button>
+<div id="stripContainer"></div>
 
-  <div id="stripContainer"></div>
+<script src="script.js"></script>
 
-  <script src="script.js"></script>
 </body>
 </html>
