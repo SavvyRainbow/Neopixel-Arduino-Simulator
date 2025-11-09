@@ -81,20 +81,40 @@ h2 { color: #fff !important; }
 <textarea id="codeInput">
 // Paste Arduino code here
 #include <Adafruit_NeoPixel.h>
-Adafruit_NeoPixel strip(10,6,NEO_GRB);
 
-void setup(){
-  strip.begin();
+Adafruit_NeoPixel strip1(10, 6, NEO_GRB);
+Adafruit_NeoPixel strip2(15, 7, NEO_RGB);
+
+void setup() {
+  strip1.begin();
+  strip2.begin();
 }
 
-void loop(){
-  for(int i=0;i<strip.numPixels();i++){
-    strip.setPixelColor(i, strip.Color(255,0,0));
-    strip.show();
+void loop() {
+  for(int i=0; i<strip1.numPixels(); i++){
+    strip1.clear();
+    strip1.setPixelColor(i, strip1.Color(255,0,0));
+    strip1.show();
     delay(100);
   }
-  strip.clear();
-  strip.show();
+
+  for(int i=0; i<strip2.numPixels(); i++){
+    int color = strip2.Wheel((i*16) % 256);
+    strip2.setPixelColor(i, color);
+    strip2.show();
+    delay(50);
+  }
+
+  strip1.fill(strip1.Color(255,255,255));
+  strip2.fill(strip2.Color(255,255,255));
+  strip1.show();
+  strip2.show();
+  delay(500);
+
+  strip1.clear();
+  strip2.clear();
+  strip1.show();
+  strip2.show();
   delay(500);
 }
 </textarea>
