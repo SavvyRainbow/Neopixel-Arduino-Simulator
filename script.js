@@ -44,36 +44,22 @@ class WebNeoPixel {
     }
   }
 
-  setBrightness(b) {
-    this.brightness = Math.max(0, Math.min(255, b));
-  }
-
+  setBrightness(b) { this.brightness = Math.max(0, Math.min(255, b)); }
   fill(color = 0, first = 0, count = 0) {
-    if (count === 0) count = this.num - first;
-    for (let i = first; i < first + count; i++) this.setPixelColor(i, color);
+    if(count === 0) count = this.num - first;
+    for(let i = first; i < first + count; i++) this.setPixelColor(i, color);
   }
-
   clear() { this.fill(0); }
-
   setPixelColor(i, r, g, b, w = 0) {
-    if (g === undefined) {
+    if(g === undefined) {
       this.buffer[i] = this.unpackColor(r);
       return;
     }
     this.buffer[i] = { r:r||0, g:g||0, b:b||0, w:w||0 };
   }
-
-  Color(r, g, b, w = 0) {
-    return (w << 24) | (r << 16) | (g << 8) | b;
-  }
-
+  Color(r,g,b,w=0) { return (w<<24)|(r<<16)|(g<<8)|b; }
   unpackColor(c) {
-    return {
-      w: (c >> 24) & 255,
-      r: (c >> 16) & 255,
-      g: (c >> 8) & 255,
-      b: c & 255
-    };
+    return { w:(c>>24)&255, r:(c>>16)&255, g:(c>>8)&255, b:c&255 };
   }
 }
 
@@ -83,21 +69,15 @@ class WebNeoPixel {
 class WebButton {
   constructor(label) {
     this.callback = null;
-
     this.elem = document.createElement("button");
     this.elem.textContent = label;
     this.elem.classList.add("simButton");
 
-    this.elem.onclick = () => {
-      if (this.callback) this.callback();
-    };
-
+    this.elem.onclick = () => { if(this.callback) this.callback(); };
     stripContainer.appendChild(this.elem);
   }
 
-  onClick(cb) {
-    this.callback = cb;
-  }
+  onClick(cb) { this.callback = cb; }
 }
 
 /* -----------------------------------------
@@ -110,9 +90,7 @@ function newStrip(numPixels, pin, type="GRB") {
   return strip;
 }
 
-function delay(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
+function delay(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 
 /* -----------------------------------------
    Arduino → JavaScript Preprocessor
@@ -122,43 +100,28 @@ function preprocessArduinoCode(code) {
   // Remove #include lines
   code = code.replace(/^\s*#.*$/gm, "");
 
-  // Replace NeoPixel type constants NEO_GRB → "GRB"
-  code = code.replace(/\bNEO_([A-Z]+)\b/g, (m, t) => `"${t}"`);
+  // Replace NeoPixel constants
+  code = code.replace(/\bNEO_([A-Z]+)\b/g, (m,t)=> `"${t}"`);
+  code = code.replace(/\+?\s*NEO_KHZ\d+/g,""); // remove timing constants
 
-  // Form 1: Adafruit_NeoPixel strip(10,6,"GRB");
-  code = code.replace(
-    /Adafruit_NeoPixel\s+(\w+)\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*"([A-Za-z]+)"\s*\)\s*;/g,
-    (m, name, count, pin, type) => `let ${name} = newStrip(${count}, ${pin}, "${type}");`
-  );
+  // Replace C++ types
+  code = code.replace(/\b(int|long|byte|char)\b/g,"let");
 
-  // Form 2: Adafruit_NeoPixel strip = Adafruit_NeoPixel(...);
-  code = code.replace(
-    /Adafruit_NeoPixel\s+(\w+)\s*=\s*Adafruit_NeoPixel\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*"([A-Za-z]+)"\s*\)\s*;/g,
-    (m, name, count, pin, type) => `let ${name} = newStrip(${count}, ${pin}, "${type}");`
-  );
+  // Replace Adafruit_NeoPixel initialization
+  code = code.replace(/Adafruit_NeoPixel\s+(\w+)\s*\(\s*([^)]+)\s*\)\s*;/g,
+    (m,name,args)=> `let ${name} = newStrip(${args.split(",").map(a=>a.trim()).slice(0,3).join(",")});`);
 
-  // Button btn = new Button("Click Me");
-  code = code.replace(
-    /Button\s+(\w+)\s*=\s*new\s+Button\s*\("([^"]+)"\)\s*;/g,
-    `let $1 = new WebButton("$2");`
-  );
+  code = code.replace(/Button\s+(\w+)\s*=\s*new\s+Button\s*\("([^"]+)"\)\s*;/g,
+    `let $1 = new WebButton("$2");`);
 
-  // Smart delay: Only replace when not already awaited
-  code = code.replace(/(?<!await\s)\bdelay\s*\(/g, "await delay(");
+  // Replace delay with await delay
+  code = code.replace(/(?<!await\s)\bdelay\s*\(/g,"await delay(");
 
-  // ✅ Convert ALL forms of setup() to arrow-based assignments
-  code = code.replace(/async\s+function\s+setup\s*\(\s*\)\s*\{/g,
-                      "setup = async () => {");
-
-  code = code.replace(/void\s+setup\s*\(\s*\)\s*\{/g,
-                      "setup = async () => {");
-
-  // ✅ Convert ALL forms of loop() to arrow-based assignments
-  code = code.replace(/async\s+function\s+loop\s*\(\s*\)\s*\{/g,
-                      "loop = async () => {");
-
-  code = code.replace(/void\s+loop\s*\(\s*\)\s*\{/g,
-                      "loop = async () => {");
+  // Convert setup/loop to async arrow functions
+  code = code.replace(/async\s+function\s+setup\s*\(\s*\)\s*\{/g,"setup = async () => {");
+  code = code.replace(/void\s+setup\s*\(\s*\)\s*\{/g,"setup = async () => {");
+  code = code.replace(/async\s+function\s+loop\s*\(\s*\)\s*\{/g,"loop = async () => {");
+  code = code.replace(/void\s+loop\s*\(\s*\)\s*\{/g,"loop = async () => {");
 
   return code;
 }
@@ -176,7 +139,7 @@ runBtn.onclick = () => {
   console.log("----- PROCESSED CODE -----\n" + code);
 
   try {
-    // ---- FIX: wrap code + calls in async IIFE INSIDE eval ----
+    // Wrap user code in async IIFE inside eval
     eval(`(async () => {
       ${code}
       await setup();
@@ -186,3 +149,24 @@ runBtn.onclick = () => {
     console.error("Simulation error:", err);
   }
 };
+
+/* -----------------------------------------
+   Example helper function (CylonBounce)
+------------------------------------------ */
+async function CylonBounce(red, green, blue, EyeSize, NumLoops, SpeedDelay) {
+  for (let loop = 0; loop < NumLoops; loop++) {
+    for (let i = 0; i < BLADE_NUM_LEDS - EyeSize - 2; i++) {
+      for (let j = 0; j < BLADE_NUM_LEDS; j++) {
+        bladeStrip.setPixelColor(j, 0, 100, 0);
+      }
+      bladeStrip.show();
+      bladeStrip.setPixelColor(i, red/10, green/10, blue/10);
+      for (let j = 1; j <= EyeSize; j++) {
+        bladeStrip.setPixelColor(i+j, red, green, blue);
+      }
+      bladeStrip.setPixelColor(i+EyeSize+1, red/10, green/10, blue/10);
+      bladeStrip.show();
+      await delay(SpeedDelay);
+    }
+  }
+}
