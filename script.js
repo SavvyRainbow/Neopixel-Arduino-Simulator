@@ -3,10 +3,12 @@ const runBtn = document.getElementById("runBtn");
 
 let allStrips = [];
 
+// Gamma table (optional, for brightness correction)
 const gammaTable = new Array(256).fill(0).map((_, i) =>
   Math.floor(Math.pow(i / 255, 2.6) * 255 + 0.5)
 );
 
+// NeoPixel simulation class
 class WebNeoPixel {
   constructor(numPixels, pin, type = "GRB") {
     this.num = numPixels;
@@ -98,6 +100,37 @@ class WebNeoPixel {
   }
 }
 
+// Button simulation class
+class WebButton {
+  constructor(label){
+    this.label = label;
+    this.callback = null;
+
+    // DOM element
+    this.elem = document.createElement("button");
+    this.elem.textContent = label;
+    this.elem.style.margin = "5px";
+    this.elem.style.padding = "5px 15px";
+    this.elem.style.border = "2px solid #0f0";
+    this.elem.style.borderRadius = "5px";
+    this.elem.style.background = "transparent";
+    this.elem.style.color = "#fff";
+    this.elem.style.cursor = "pointer";
+
+    // Click handler
+    this.elem.addEventListener("click", () => {
+      if(typeof this.callback === "function") this.callback();
+    });
+
+    stripContainer.appendChild(this.elem);
+  }
+
+  onClick(cb){
+    this.callback = cb;
+  }
+}
+
+// Create a new strip and attach to DOM
 function newStrip(numPixels, pin, type="GRB"){
   const strip = new WebNeoPixel(numPixels,pin,type);
   allStrips.push(strip);
@@ -107,26 +140,37 @@ function newStrip(numPixels, pin, type="GRB"){
 
 function delay(ms){ return new Promise(r=>setTimeout(r,ms)); }
 
+// Preprocess Arduino code
 function preprocessArduinoCode(code){
+  // Remove #include lines
   code = code.replace(/^\s*#.*$/gm,"");
+  // Map NeoPixel constants
   code = code.replace(/\bNEO_GRB\b/g, `"GRB"`);
   code = code.replace(/\bNEO_RGB\b/g, `"RGB"`);
   code = code.replace(/\bNEO_RGBW\b/g, `"RGBW"`);
   code = code.replace(/\bNEO_BRG\b/g, `"BRG"`);
   code = code.replace(/\bNEO_GBR\b/g, `"GBR"`);
   code = code.replace(/\bNEO_BGR\b/g, `"BGR"`);
+  // Convert Adafruit_NeoPixel to WebNeoPixel
   code = code.replace(/Adafruit_NeoPixel\s+(\w+)\s*=\s*Adafruit_NeoPixel\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*([^)]+)\);/g,
-    `let $1 = newStrip($2,$3,$4);`);
+                      `let $1 = newStrip($2,$3,$4);`);
   code = code.replace(/Adafruit_NeoPixel\s+(\w+)\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*([^)]+)\);/g,
-    `let $1 = newStrip($2,$3,$4);`);
+                      `let $1 = newStrip($2,$3,$4);`);
+  // Convert for-loop types
   code = code.replace(/\b(for\s*\(\s*)(int|long|byte|char)(?=\s*\w)/g, "$1let");
   code = code.replace(/\b(int|long|byte|char)\b/g, "let ");
+  // Convert delay to await delay
   code = code.replace(/\bdelay\s*\(/g,"await delay(");
+  // Convert setup/loop
   code = code.replace(/void\s+setup\s*\(\s*\)/,"async function setup()");
   code = code.replace(/void\s+loop\s*\(\s*\)/,"async function loop()");
+  // Convert Button declarations
+  code = code.replace(/Button\s+(\w+)\s*=\s*new Button\s*\(\s*["'](\w+)["']\s*\);/g,
+                      "let $1 = new WebButton('$2');");
   return code;
 }
 
+// Run button handler
 runBtn.onclick = async () => {
   stripContainer.innerHTML = "";
   allStrips = [];
@@ -135,23 +179,18 @@ runBtn.onclick = async () => {
   code = preprocessArduinoCode(code);
 
   try {
-    // Wrap user code in async function inside the string
-    const userFunc = new Function("newStrip","delay",
+    const userFunc = new Function("newStrip","delay","WebButton",
       `"use strict";
-       return (async () => {
+       return (async ()=>{
          ${code}
          if(typeof setup==='function') await setup();
          if(typeof loop==='function') while(true) await loop();
        })();`
     );
 
-    // Await the call to the async function
-    await userFunc(newStrip, delay);
+    await userFunc(newStrip, delay, WebButton);
 
   } catch(err) {
     console.error("Simulation error:", err);
   }
 };
-
-
-
