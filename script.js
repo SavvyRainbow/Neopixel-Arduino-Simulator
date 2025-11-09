@@ -138,9 +138,28 @@ function newStrip(numPixels, pin, type="GRB"){
 
 function delay(ms){ return new Promise(r=>setTimeout(r,ms)); }
 
-// Preprocess Arduino-style code
+// Preprocess Arduino-style code with top-level declarations
 function preprocessArduinoCode(code){
   code = code.replace(/^\s*#.*$/gm,""); // remove #include
+
+  // Collect NeoPixel declarations
+  const pixelMatches = [...code.matchAll(/Adafruit_NeoPixel\s+(\w+)\s*=\s*Adafruit_NeoPixel\s*\([^)]+\);/g)];
+  let topDeclarations = "";
+  for(const m of pixelMatches){
+    topDeclarations += m[0].replace(/Adafruit_NeoPixel\s+(\w+)\s*=\s*Adafruit_NeoPixel/, "let $1 = newStrip") + "\n";
+  }
+  code = code.replace(/Adafruit_NeoPixel\s+(\w+)\s*=\s*Adafruit_NeoPixel\s*\([^)]+\);/g, "");
+
+  // Collect Button declarations
+  const buttonMatches = [...code.matchAll(/Button\s+(\w+)\s*=\s*new\s+Button\s*\([^)]+\);/g)];
+  for(const m of buttonMatches){
+    topDeclarations += m[0].replace(/Button\s+(\w+)\s*=\s*new\s+Button/, "let $1 = new WebButton") + "\n";
+  }
+  code = code.replace(/Button\s+(\w+)\s*=\s*new\s+Button\s*\([^)]+\);/g, "");
+
+  code = topDeclarations + code;
+
+  // NeoPixel constants
   code = code.replace(/\bNEO_GRB\b/g, `"GRB"`);
   code = code.replace(/\bNEO_RGB\b/g, `"RGB"`);
   code = code.replace(/\bNEO_RGBW\b/g, `"RGBW"`);
@@ -148,23 +167,21 @@ function preprocessArduinoCode(code){
   code = code.replace(/\bNEO_GBR\b/g, `"GBR"`);
   code = code.replace(/\bNEO_BGR\b/g, `"BGR"`);
 
-  code = code.replace(/Adafruit_NeoPixel\s+(\w+)\s*=\s*Adafruit_NeoPixel\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*([^)]+)\);/g,
-                      `let $1 = newStrip($2,$3,$4);`);
-
-  code = code.replace(/Button\s+(\w+)\s*=\s*new\s+Button\s*\(\s*["']([^"']+)["']\s*\);/g,
-                      `let $1 = new WebButton('$2');`);
-
+  // Loop variables
   code = code.replace(/\b(for\s*\(\s*)(int|long|byte|char)(?=\s*\w)/g, "$1let");
   code = code.replace(/\b(int|long|byte|char)\b/g, "let ");
 
+  // delay -> await delay
   code = code.replace(/\bdelay\s*\(/g,"await delay(");
+
+  // setup/loop
   code = code.replace(/void\s+setup\s*\(\s*\)/,"async function setup()");
   code = code.replace(/void\s+loop\s*\(\s*\)/,"async function loop()");
 
   return code;
 }
 
-// Run button handler (robust eval sandbox)
+// Run button handler
 runBtn.onclick = async () => {
   stripContainer.innerHTML = "";
   allStrips = [];
@@ -173,9 +190,9 @@ runBtn.onclick = async () => {
   code = preprocessArduinoCode(code);
 
   try {
-    // Execute user code in an async IIFE sandbox
+    // Execute user code in async IIFE
     await (async function(newStrip, delay, WebButton){
-      eval(code); // user code runs here safely
+      eval(code); // user code runs here
       if(typeof setup==='function') await setup();
       if(typeof loop==='function') while(true) await loop();
     })(newStrip, delay, WebButton);
