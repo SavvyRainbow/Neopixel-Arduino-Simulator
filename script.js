@@ -141,8 +141,14 @@ function preprocessArduinoCode(code){
   code = code.replace(/Adafruit_NeoPixel\s+(\w+)\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*([^)]+)\);/g,
     `let $1 = newStrip($2,$3,$4);`);
 
-  // --- Convert all C++ types to JS 'let' ---
-  // Replace int/long/byte/char in for-loops and variable declarations
+  // ----------------------------
+  // Convert C++ types to JS 'let'
+  // ----------------------------
+
+  // Inside for-loops: for(int i=0; ...) → for(let i=0; ...)
+  code = code.replace(/\b(for\s*\()\s*(int|long|byte|char)\b/g, "$1let");
+
+  // Normal variable declarations: int x=0; → let x=0;
   code = code.replace(/\b(int|long|byte|char)\s+/g, "let ");
 
   // Convert delay() → await delay()
@@ -154,6 +160,7 @@ function preprocessArduinoCode(code){
 
   return code;
 }
+
 
 
 // ================= RUN BUTTON =================
