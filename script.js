@@ -167,32 +167,23 @@ function preprocessArduinoCode(code) {
    Main Execution Handler
 ------------------------------------------ */
 runBtn.onclick = async () => {
-
   stripContainer.innerHTML = "";
   allStrips = [];
 
   let code = document.getElementById("codeInput").value;
   code = preprocessArduinoCode(code);
 
-  // DEBUG: Show processed code
   console.log("----- PROCESSED CODE -----\n" + code);
 
   try {
-    // Wrap everything inside a single async function
-    const wrapped = `
-      let setup = async ()=>{};
-      let loop  = async ()=>{};
-
+    // Execute user code inside async IIFE
+    await eval(`(async () => {
       ${code}
-
       await setup();
-      while (true) await loop();
-    `;
-
-    // Execute the wrapped program
-    await (async () => { eval(wrapped); })();
-
+      while(true) await loop();
+    })()`);
   } catch (err) {
     console.error("Simulation error:", err);
   }
 };
+
