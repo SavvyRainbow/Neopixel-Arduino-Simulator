@@ -124,10 +124,10 @@ function delay(ms){ return new Promise(r=>setTimeout(r,ms)); }
 
 // ================= ARDUINO PREPROCESSOR =================
 function preprocessArduinoCode(code){
-  // Remove all #include / #define / #pragma lines
+  // 1️⃣ Remove all Arduino preprocessor lines (#include, #define, #pragma)
   code = code.replace(/^\s*#.*$/gm,"");
 
-  // Replace NEO_* constants
+  // 2️⃣ Replace NEO_* constants
   code = code.replace(/\bNEO_GRB\b/g, `"GRB"`);
   code = code.replace(/\bNEO_RGB\b/g, `"RGB"`);
   code = code.replace(/\bNEO_RGBW\b/g, `"RGBW"`);
@@ -135,31 +135,27 @@ function preprocessArduinoCode(code){
   code = code.replace(/\bNEO_GBR\b/g, `"GBR"`);
   code = code.replace(/\bNEO_BGR\b/g, `"BGR"`);
 
-  // Convert Adafruit_NeoPixel constructors
+  // 3️⃣ Convert Adafruit_NeoPixel constructors
   code = code.replace(/Adafruit_NeoPixel\s+(\w+)\s*=\s*Adafruit_NeoPixel\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*([^)]+)\);/g,
     `let $1 = newStrip($2,$3,$4);`);
   code = code.replace(/Adafruit_NeoPixel\s+(\w+)\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*([^)]+)\);/g,
     `let $1 = newStrip($2,$3,$4);`);
 
-  // ----------------------------
-  // Convert C++ types to JS 'let'
-  // ----------------------------
+  // 4️⃣ Convert C++ types to JS 'let'
+  // ✅ Handles for-loops and variable declarations
+  code = code.replace(/\b(for\s*\(\s*)(int|long|byte|char)(?=\s*\w)/g, "$1let"); // for(int i=0;...)
+  code = code.replace(/\b(int|long|byte|char)\b/g, "let ");                       // other declarations
 
-  // Inside for-loops: for(int i=0; ...) → for(let i=0; ...)
-  code = code.replace(/\b(for\s*\()\s*(int|long|byte|char)\b/g, "$1let");
-
-  // Normal variable declarations: int x=0; → let x=0;
-  code = code.replace(/\b(int|long|byte|char)\s+/g, "let ");
-
-  // Convert delay() → await delay()
+  // 5️⃣ Convert delay() → await delay()
   code = code.replace(/\bdelay\s*\(/g,"await delay(");
 
-  // Convert void setup()/loop()
+  // 6️⃣ Convert void setup()/loop()
   code = code.replace(/void\s+setup\s*\(\s*\)/,"async function setup()");
   code = code.replace(/void\s+loop\s*\(\s*\)/,"async function loop()");
 
   return code;
 }
+
 
 
 
