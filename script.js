@@ -1,58 +1,64 @@
-const LED_COUNT = 60;  // Change strip length as needed
+// ============= GLOBALS =============
+const stripContainer = document.getElementById("stripContainer");
+const runBtn = document.getElementById("runBtn");
 
-// Gamma table for gamma8()
+// Registry of all strips the user creates
+let allStrips = [];
+
+// ============= GAMMA TABLE =============
 const gammaTable = new Array(256).fill(0).map((_, i) =>
   Math.floor(Math.pow(i / 255, 2.6) * 255 + 0.5)
 );
 
-// ==========================
-//    NeoPixel Strip Class
-// ==========================
+// ============= STRIP CLASS =============
 class WebNeoPixel {
-  constructor(numPixels, pin, type = "GRB") {
+  constructor(numPixels, pin, type) {
     this.num = numPixels;
-    this.type = type.includes("RGBW") ? "RGBW" : "RGB";
+    this.pin = pin;
+    this.type = type;
     this.brightness = 255;
 
     this.buffer = new Array(this.num).fill(0).map(() => ({
-      r: 0,
-      g: 0,
-      b: 0,
-      w: 0
+      r: 0, g: 0, b: 0, w: 0
     }));
+
+    this.row = null;
+    this.leds = [];
   }
 
-  begin() { /* kept for API compatibility */ }
+  // Create DOM row for this strip
+  attachToDOM(name = "") {
+    this.row = document.createElement("div");
+    this.row.classList.add("stripRow");
+
+    const label = document.createElement("div");
+    label.classList.add("stripLabel");
+    label.textContent = name;
+    this.row.appendChild(label);
+
+    for (let i = 0; i < this.num; i++) {
+      const led = document.createElement("div");
+      led.classList.add("led");
+      this.row.appendChild(led);
+      this.leds.push(led);
+    }
+
+    stripContainer.appendChild(this.row);
+  }
+
+  begin() { /* compatibility */ }
 
   show() {
     for (let i = 0; i < this.num; i++) {
-      const led = this.dom[i];
       const px = this.buffer[i];
-
       const br = this.brightness / 255;
 
-      let r = px.r * br;
-      let g = px.g * br;
-      let b = px.b * br;
+      const r = px.r * br;
+      const g = px.g * br;
+      const b = px.b * br;
 
-      led.style.background = `rgb(${r},${g},${b})`;
+      this.leds[i].style.background = `rgb(${r},${g},${b})`;
     }
-  }
-
-  setBrightness(b) {
-    this.brightness = Math.max(0, Math.min(255, b));
-  }
-
-  getBrightness() {
-    return this.brightness;
-  }
-
-  numPixels() {
-    return this.num;
-  }
-
-  clear() {
-    this.fill(0);
   }
 
   fill(color = 0, first = 0, count = 0) {
@@ -62,29 +68,33 @@ class WebNeoPixel {
     }
   }
 
+  clear() {
+    this.fill(0);
+  }
+
   setPixelColor(i, r, g, b, w) {
     if (typeof r === "number" && g === undefined) {
-      const c = this.unpackColor(r);
-      this.buffer[i] = c;
+      this.buffer[i] = this.unpackColor(r);
       return;
     }
-
-    this.buffer[i] = {
-      r: r || 0,
-      g: g || 0,
-      b: b || 0,
-      w: w || 0
-    };
+    this.buffer[i] = { r, g, b, w: w || 0 };
   }
 
   getPixelColor(i) {
     const px = this.buffer[i];
-    return (
-      (px.w << 24) |
-      (px.r << 16) |
-      (px.g << 8) |
-      (px.b)
-    );
+    return (px.w << 24) | (px.r << 16) | (px.g << 8) | px.b;
+  }
+
+  numPixels() {
+    return this.num;
+  }
+
+  setBrightness(b) {
+    this.brightness = Math.max(0, Math.min(255, b));
+  }
+
+  getBrightness() {
+    return this.brightness;
   }
 
   Color(r, g, b, w = 0) {
@@ -96,7 +106,7 @@ class WebNeoPixel {
       w: (c >> 24) & 255,
       r: (c >> 16) & 255,
       g: (c >> 8) & 255,
-      b: c & 255
+      b: (c) & 255
     };
   }
 
@@ -117,7 +127,7 @@ class WebNeoPixel {
       case 2: r=p; g=v; b=t; break;
       case 3: r=p; g=q; b=v; break;
       case 4: r=t; g=p; b=v; break;
-      case 5: r=v; g=p; b=q; break;
+      default: r=v; g=p; b=q;
     }
 
     return this.Color(r, g, b);
@@ -149,41 +159,29 @@ class WebNeoPixel {
   }
 }
 
-// ===========================
-//   DOM + Interpreter Setup
-// ===========================
-const strip = document.getElementById("ledStrip");
-const runBtn = document.getElementById("runBtn");
-
-let neo = new WebNeoPixel(LED_COUNT, 6, "GRB");
-
-function setupStripDOM() {
-  strip.innerHTML = "";
-  neo.dom = [];
-  for (let i = 0; i < neo.num; i++) {
-    const led = document.createElement("div");
-    led.classList.add("led");
-    strip.appendChild(led);
-    neo.dom.push(led);
-  }
+// ========== GLOBAL HELPERS ==========
+function newStrip(numPixels, pin, type = "GRB") {
+  const strip = new WebNeoPixel(numPixels, pin, type);
+  allStrips.push(strip);
+  strip.attachToDOM(`Pin ${pin}`);
+  return strip;
 }
 
-// Simulated Arduino delay()
 function delay(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise(r => setTimeout(r, ms));
 }
 
+// =========== RUN BUTTON ===========
 runBtn.onclick = async () => {
-  setupStripDOM();
+  stripContainer.innerHTML = "";
+  allStrips = [];
 
-  const userCode = document.getElementById("codeInput").value;
+  const code = document.getElementById("codeInput").value;
 
   const sandbox = new Function(
-    "strip", "delay",
-    `"use strict"; return (async () => { ${userCode} })()`
+    "newStrip", "delay",
+    `"use strict"; return (async () => { ${code} })()`
   );
 
-  sandbox(neo, delay);
+  sandbox(newStrip, delay);
 };
-
-setupStripDOM();
