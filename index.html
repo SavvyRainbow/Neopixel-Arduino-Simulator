@@ -11,25 +11,38 @@
 
 <textarea id="codeInput">
 // Paste Arduino code here
-Adafruit_NeoPixel strip(10,6,NEO_GRB);
-Button btn = new Button("Click Me");
+#include <Adafruit_NeoPixel.h>
 
-async function setup() {
-  strip.begin();
-  strip.fill(strip.Color(0,0,255));
-  strip.show();
+#define BLADE_LED_PIN 8
+#define BLADE_NUM_LEDS 144
 
-  btn.onClick(() => {
-    strip.fill(strip.Color(255,0,0));
-    strip.show();
-  });
+Adafruit_NeoPixel bladeStrip(BLADE_NUM_LEDS, BLADE_LED_PIN, NEO_GRB + NEO_KHZ800);
+
+int currentLEDs = 0;
+
+void setup() {
+  bladeStrip.begin();
+  bladeStrip.show();
+  bladeStrip.fill(bladeStrip.Color(0,100,0), 0);
 }
 
-async function loop() {
-  await delay(500);
-  strip.clear();
-  strip.show();
-  await delay(500);
+void loop() {
+  //pulseEffect();
+  CylonBounce(0xff, 0, 0, 4, 10, 50){
+
+  for (int i = 0; i < BLADE_NUM_LEDS - EyeSize - 2; i++) {
+    for (int i = 0; i < BLADE_NUM_LEDS; i++) {
+      bladeStrip.setPixelColor(i, 0, 100, 0);
+    }
+    bladeStrip.show();
+    bladeStrip.setPixelColor(i, red / 10, green / 10, blue / 10);
+    for (int j = 1; j <= EyeSize; j++) {
+      bladeStrip.setPixelColor(i + j, red, green, blue);
+    }
+    bladeStrip.setPixelColor(i + EyeSize + 1, red / 10, green / 10, blue / 10);
+    bladeStrip.show();
+    delay(SpeedDelay);
+  }
 }
 
 </textarea>
