@@ -8,7 +8,7 @@ const gammaTable = new Array(256).fill(0).map((_, i) =>
   Math.floor(Math.pow(i / 255, 2.6) * 255 + 0.5)
 );
 
-// NeoPixel simulation class
+// NeoPixel simulation
 class WebNeoPixel {
   constructor(numPixels, pin, type = "GRB") {
     this.num = numPixels;
@@ -138,10 +138,9 @@ function newStrip(numPixels, pin, type="GRB"){
 
 function delay(ms){ return new Promise(r=>setTimeout(r,ms)); }
 
-// Preprocess Arduino code to valid JS
+// Preprocess Arduino-style code
 function preprocessArduinoCode(code){
   code = code.replace(/^\s*#.*$/gm,""); // remove #include
-  // NeoPixel constants
   code = code.replace(/\bNEO_GRB\b/g, `"GRB"`);
   code = code.replace(/\bNEO_RGB\b/g, `"RGB"`);
   code = code.replace(/\bNEO_RGBW\b/g, `"RGBW"`);
@@ -149,29 +148,23 @@ function preprocessArduinoCode(code){
   code = code.replace(/\bNEO_GBR\b/g, `"GBR"`);
   code = code.replace(/\bNEO_BGR\b/g, `"BGR"`);
 
-  // Adafruit_NeoPixel -> WebNeoPixel
   code = code.replace(/Adafruit_NeoPixel\s+(\w+)\s*=\s*Adafruit_NeoPixel\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*([^)]+)\);/g,
                       `let $1 = newStrip($2,$3,$4);`);
 
-  // Button declarations
   code = code.replace(/Button\s+(\w+)\s*=\s*new\s+Button\s*\(\s*["']([^"']+)["']\s*\);/g,
-                      "let $1 = new WebButton('$2');");
+                      `let $1 = new WebButton('$2');`);
 
-  // Loop variables
   code = code.replace(/\b(for\s*\(\s*)(int|long|byte|char)(?=\s*\w)/g, "$1let");
   code = code.replace(/\b(int|long|byte|char)\b/g, "let ");
 
-  // delay -> await delay
   code = code.replace(/\bdelay\s*\(/g,"await delay(");
-
-  // setup/loop
   code = code.replace(/void\s+setup\s*\(\s*\)/,"async function setup()");
   code = code.replace(/void\s+loop\s*\(\s*\)/,"async function loop()");
 
   return code;
 }
 
-// Run button handler
+// Run button handler (robust eval sandbox)
 runBtn.onclick = async () => {
   stripContainer.innerHTML = "";
   allStrips = [];
@@ -180,18 +173,12 @@ runBtn.onclick = async () => {
   code = preprocessArduinoCode(code);
 
   try {
-    // Wrap user code in async IIFE to prevent "Unexpected identifier" errors
-    const wrappedCode = `
-      (async function(){
-        ${code}
-        if(typeof setup==='function') await setup();
-        if(typeof loop==='function') while(true) await loop();
-      })();
-    `;
-
-    const userFunc = new Function("newStrip","delay","WebButton", wrappedCode);
-
-    await userFunc(newStrip, delay, WebButton);
+    // Execute user code in an async IIFE sandbox
+    await (async function(newStrip, delay, WebButton){
+      eval(code); // user code runs here safely
+      if(typeof setup==='function') await setup();
+      if(typeof loop==='function') while(true) await loop();
+    })(newStrip, delay, WebButton);
 
   } catch(err) {
     console.error("Simulation error:", err);
