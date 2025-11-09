@@ -124,7 +124,7 @@ function delay(ms){ return new Promise(r=>setTimeout(r,ms)); }
 
 // ================= ARDUINO PREPROCESSOR =================
 function preprocessArduinoCode(code){
-  // Remove all Arduino preprocessor lines (#include, #define, #pragma)
+  // Remove all #include / #define / #pragma lines
   code = code.replace(/^\s*#.*$/gm,"");
 
   // Replace NEO_* constants
@@ -141,8 +141,9 @@ function preprocessArduinoCode(code){
   code = code.replace(/Adafruit_NeoPixel\s+(\w+)\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*([^)]+)\);/g,
     `let $1 = newStrip($2,$3,$4);`);
 
-  // Convert all C++ types (int, long, byte, char) → let
-  code = code.replace(/\b(int|long|byte|char)\b/g, "let");
+  // --- Convert all C++ types to JS 'let' ---
+  // Replace int/long/byte/char in for-loops and variable declarations
+  code = code.replace(/\b(int|long|byte|char)\s+/g, "let ");
 
   // Convert delay() → await delay()
   code = code.replace(/\bdelay\s*\(/g,"await delay(");
@@ -153,6 +154,7 @@ function preprocessArduinoCode(code){
 
   return code;
 }
+
 
 // ================= RUN BUTTON =================
 runBtn.onclick = async () => {
