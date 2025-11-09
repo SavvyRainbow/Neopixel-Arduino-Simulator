@@ -166,7 +166,7 @@ function preprocessArduinoCode(code) {
 /* -----------------------------------------
    Main Execution Handler
 ------------------------------------------ */
-runBtn.onclick = async () => {
+runBtn.onclick = () => {
   stripContainer.innerHTML = "";
   allStrips = [];
 
@@ -176,8 +176,8 @@ runBtn.onclick = async () => {
   console.log("----- PROCESSED CODE -----\n" + code);
 
   try {
-    // Execute user code inside async IIFE
-    await eval(`(async () => {
+    // ---- FIX: wrap code + calls in async IIFE INSIDE eval ----
+    eval(`(async () => {
       ${code}
       await setup();
       while(true) await loop();
@@ -186,4 +186,3 @@ runBtn.onclick = async () => {
     console.error("Simulation error:", err);
   }
 };
-
