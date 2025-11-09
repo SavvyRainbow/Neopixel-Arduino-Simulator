@@ -134,14 +134,26 @@ runBtn.onclick = async () => {
   let code = document.getElementById("codeInput").value;
   code = preprocessArduinoCode(code);
 
-  const sandbox = new Function(
-    "newStrip","delay",
-    `"use strict";
-     ${code}
-     if(typeof setup==='function') await setup();
-     if(typeof loop==='function') while(true) await loop();
-    `
-  );
+  try {
+    // Wrap user code in async IIFE to allow await
+    await (async () => {
+      const newStripFn = newStrip;
+      const delayFn = delay;
 
-  sandbox(newStrip, delay);
+      // eslint-disable-next-line no-new-func
+      const userFunc = new Function(
+        "newStrip","delay",
+        `"use strict";
+         ${code}
+         if(typeof setup==='function') await setup();
+         if(typeof loop==='function') while(true) await loop();
+        `
+      );
+
+      await userFunc(newStripFn, delayFn);
+    })();
+  } catch(err) {
+    console.error("Simulation error:", err);
+  }
 };
+
