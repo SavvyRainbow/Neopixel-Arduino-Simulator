@@ -135,25 +135,19 @@ runBtn.onclick = async () => {
   code = preprocessArduinoCode(code);
 
   try {
-    // Wrap user code in async IIFE to allow await
     await (async () => {
-      const newStripFn = newStrip;
-      const delayFn = delay;
-
-      // eslint-disable-next-line no-new-func
-      const userFunc = new Function(
-        "newStrip","delay",
+      // Pass in your helpers
+      const userFunc = new Function("newStrip","delay",
         `"use strict";
          ${code}
          if(typeof setup==='function') await setup();
-         if(typeof loop==='function') while(true) await loop();
-        `
+         if(typeof loop==='function') while(true) await loop();`
       );
-
-      await userFunc(newStripFn, delayFn);
+      await userFunc(newStrip, delay);
     })();
   } catch(err) {
     console.error("Simulation error:", err);
   }
 };
+
 
