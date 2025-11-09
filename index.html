@@ -4,73 +4,74 @@
 <meta charset="UTF-8">
 <title>NeoPixel Simulator</title>
 <style>
-  /* Body and page background */
-  body {
-    margin: 0;
-    padding: 20px;
-    font-family: monospace;
-    background-color: #000 !important;
-    color: #fff !important;
-  }
+body {
+  margin: 0;
+  padding: 20px;
+  font-family: monospace;
+  background-color: #000 !important;
+  color: #fff !important;
+}
 
-  h2 { color: #fff !important; }
+h2 { color: #fff !important; }
 
-  /* Code textarea */
-  #codeInput {
-    width: 100% !important;
-    height: 250px !important;
-    font-family: monospace !important;
-    background-color: #111 !important;
-    color: #fff !important;
-    padding: 10px !important;
-    border: 1px solid #333 !important;
-    border-radius: 5px !important;
-    resize: vertical !important;
-    box-sizing: border-box !important;
-  }
+#codeInput {
+  width: 100%;
+  height: 250px;
+  font-family: monospace;
+  background-color: #000 !important;
+  background: #000 !important;
+  color: #fff !important;
+  caret-color: #fff !important;
+  border: 1px solid #333 !important;
+  border-radius: 5px !important;
+  padding: 10px !important;
+  resize: vertical !important;
+  box-sizing: border-box !important;
+  outline: none !important;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+}
 
-  #codeInput::-webkit-scrollbar { width: 8px; }
-  #codeInput::-webkit-scrollbar-track { background: #222; }
-  #codeInput::-webkit-scrollbar-thumb { background: #555; border-radius: 4px; }
+#codeInput::-webkit-scrollbar { width: 8px; }
+#codeInput::-webkit-scrollbar-track { background: #111; }
+#codeInput::-webkit-scrollbar-thumb { background: #555; border-radius: 4px; }
 
-  /* Run button with green outline */
-  #runBtn {
-    margin-top: 10px;
-    padding: 10px 20px;
-    background: transparent;
-    color: #fff;
-    border: 2px solid #0f0;
-    border-radius: 5px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
+#runBtn {
+  margin-top: 10px;
+  padding: 10px 20px;
+  background: transparent;
+  color: #fff;
+  border: 2px solid #0f0;
+  border-radius: 5px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+}
 
-  #runBtn:hover {
-    background-color: #0f0;
-    color: #000;
-  }
+#runBtn:hover {
+  background-color: #0f0;
+  color: #000;
+}
 
-  /* NeoPixel strip container */
-  #stripContainer { margin-top: 20px; }
-  .stripRow {
-    margin-bottom: 10px;
-    display: flex;
-    align-items: center;
-  }
-  .stripLabel {
-    margin-right: 10px;
-    width: 60px;
-    color: #fff !important;
-  }
-  .led {
-    width: 20px;
-    height: 20px;
-    background: #111 !important;
-    margin: 1px;
-    border-radius: 3px;
-    border: 1px solid #333;
-  }
+#stripContainer { margin-top: 20px; }
+.stripRow {
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+}
+.stripLabel {
+  margin-right: 10px;
+  width: 60px;
+  color: #fff !important;
+}
+.led {
+  width: 20px;
+  height: 20px;
+  background: #111 !important;
+  margin: 1px;
+  border-radius: 3px;
+  border: 1px solid #333;
+}
 </style>
 </head>
 <body>
@@ -78,7 +79,7 @@
 <h2>NeoPixel Simulator</h2>
 
 <textarea id="codeInput">
-// Example Arduino code
+// Paste Arduino code here
 #include <Adafruit_NeoPixel.h>
 Adafruit_NeoPixel strip(10,6,NEO_GRB);
 
@@ -99,10 +100,8 @@ void loop(){
 </textarea>
 
 <button id="runBtn">Run Simulation</button>
-
 <div id="stripContainer"></div>
 
 <script src="script.js"></script>
-
 </body>
 </html>
