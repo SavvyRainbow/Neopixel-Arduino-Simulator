@@ -75,35 +75,42 @@ function newStrip(n,pin,type="GRB"){
 function delay(ms){return new Promise(r=>setTimeout(r,ms));}
 
 function preprocessArduinoCode(code){
-  code=code.replace(/^\s*#.*$/gm,"");
-  code=code.replace(/\bNEO_([A-Z]+)\b/g,(m,t)=>`"${t}"`);
+  code = code.replace(/^\s*#.*$/gm,"");
 
-  // NeoPixel constructor forms
-  code=code.replace(
+  // NeoPixel constants
+  code = code.replace(/\bNEO_([A-Z]+)\b/g,(m,t)=>`"${t}"`);
+
+  // Form: Adafruit_NeoPixel strip(10,6,"GRB");
+  code = code.replace(
     /Adafruit_NeoPixel\s+(\w+)\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*"([A-Z]+)"\s*\)\s*;/gi,
     `let $1 = newStrip($2,$3,"$4");`
   );
 
-  code=code.replace(
+  // Form: Adafruit_NeoPixel strip = Adafruit_NeoPixel(...);
+  code = code.replace(
     /Adafruit_NeoPixel\s+(\w+)\s*=\s*Adafruit_NeoPixel\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*"([A-Z]+)"\s*\)\s*;/gi,
     `let $1 = newStrip($2,$3,"$4");`
   );
 
   // Buttons
-  code=code.replace(
+  code = code.replace(
     /Button\s+(\w+)\s*=\s*new\s+Button\s*\("([^"]+)"\)\s*;/g,
     `let $1 = new WebButton("$2");`
   );
 
   // delay()
-  code=code.replace(/\bdelay\s*\(/g,"await delay(");
+  code = code.replace(/\bdelay\s*\(/g,"await delay(");
 
-  // Convert setup/loop to variables, NOT functions
-  code=code.replace(/void\s+setup\s*\(\s*\)/,"setup = async ");
-  code=code.replace(/void\s+loop\s*\(\s*\)/,"loop = async ");
+  // ✅ FIX: convert ALL setup() & loop() forms
+  code = code.replace(/async\s+function\s+setup\s*\(/g,"setup = async (");
+  code = code.replace(/async\s+function\s+loop\s*\(/g,"loop = async (");
+
+  code = code.replace(/void\s+setup\s*\(\s*\)/g,"setup = async ()");
+  code = code.replace(/void\s+loop\s*\(\s*\)/g,"loop = async ()");
 
   return code;
 }
+
 
 runBtn.onclick = async () => {
   stripContainer.innerHTML="";
